@@ -1,95 +1,90 @@
-"""
-    Un documento CSV hecho por IA con preguntas y respuestas y otro de jugadores.csv donde se guardan,
-    efectivamente, los jugadores. Los jugadores se registran con nombre.
-    Si ya existe, sigue con la partida según estaba. Si no existe empieza de cero.
-    Al final de la partida, dice el número de aciertos y fallos.
-    Si has terminado la partida e introduces el mismo nombre avisas de que se reinicia la partida.
-    Si introduces el nombre "ranking" te muestra, efectivamente, el ranking.
-    El ranking de jugadores que han terminado.
-    Para trastornados mentales hacer que las preguntas sean aleatorias
+import random
+import os
 
-"""
 from Jugador import Jugador
 
-ficheroPreguntas = "trivia_cultura_general.csv"
+ficheroPreguntas = "trivia_cultura.csv"
 ficheroJugadores = "jugadores.csv"
 
-def devolverDatos():
-    opcion = int(input("Elige una pregunta: "))
-    with open(ficheroPreguntas, "r", encoding="utf-8") as f:
-        lineas = f.read().splitlines()
-    datos = lineas[opcion].split(",")
-    pregunta = datos[0]
-    respuestas = datos[1:5]
-    correcta = datos[5]
-    return pregunta, respuestas, correcta
+def buscar_jugador(nombre):
+    if not os.path.exists(ficheroJugadores):
+        return None
+    with open(ficheroJugadores, encoding="utf-8-sig") as f:
+        for linea in f:
+            nombre, id, aciertos, fallos = linea.strip().split(";")
+            if nombre.lower() == nombre.lower():
+                return nombre, id, int(aciertos), int(fallos)
+    return None
 
 
-def menu():
-    with open(ficheroPreguntas, "r", encoding="utf-8") as f:
-        lineas = f.read().splitlines()
-
-    print("Elige una opción: ")
-    indice = 0
-    for l in lineas:
-        print(f"[{indice}] {l}")
-        indice += 1
+def guardarJugador(jugador):
+    with open(ficheroJugadores, "a", encoding="utf-8-sig") as f:
+        f.write(str(jugador) + "\n")
 
 
+def mostrarRanking():
+    if not os.path.exists(ficheroJugadores):
+        print("No hay ranking todavía.")
+        return
+    jugadores = []
+    with open(ficheroJugadores, encoding="utf-8-sig") as f:
+        for linea in f:
+            nombre, _, aciertos, _ = linea.strip().split(";")
+            jugadores.append((nombre, int(aciertos)))
+    jugadores.sort(key=lambda x: x[1], reverse=True)
 
-def addJugador():
-    tupla = []
-    jugador = Jugador(input("Introduzca su nombre: "))
-    tupla.append(jugador.getNombre())
-    tupla.append(jugador.getId())
-    return tupla
+    print("\nRANKING")
+    for i, j in enumerate(jugadores, 1):
+        print(f"{i}. {j[0]} - {j[1]} aciertos")
 
-def addInfo():
-    tupla = addJugador()
-    info = ""
-    for i in range(len(tupla)-1):
-        info += f"{tupla[i]}, "
-    info += f"{tupla[-1]}\n"
-    with open(ficheroJugadores, "a") as f:
-        f.write(info)
 
-def buscarJugador():
-    buscarJugador = input("Introduzca su ID: ")
-    with open(ficheroJugadores, "r", encoding="utf-8") as f:
-        lineas = f.read().splitlines()
-        for linea in lineas:
-            if buscarJugador in linea:
-                return linea[0]
-        return False
+def preguntaAleatoria():
+    with open(ficheroPreguntas, encoding="utf-8-sig") as f:
+        lineas = f.read().splitlines()[1:]
 
-seguir = True
-aciertos = 0
-fallos = 0
-while True:
-    buscarParticipante = buscarJugador()
+    datos = random.choice(lineas).split(";")
+    return datos[0], datos[1:5], datos[5]
+
+
+def main():
+
+    nombre = input("Introduce tu nombre (o 'ranking'): ").strip()
+
+    if nombre.lower() == "ranking":
+        mostrarRanking()
+        return
+
+    datos = buscar_jugador(nombre)
+    if datos:
+        print("Usuario existente. Se reinicia la partida.")
+        jugador = Jugador(nombre)
+    else:
+        jugador = Jugador(nombre)
+
+    seguir = True
     while seguir:
-        if not buscarJugador:
-            addInfo()
+        pregunta, respuestas, correcta = preguntaAleatoria()
+        print("\n" + pregunta)
+
+        for i, respuesta in enumerate(respuestas):
+            print(f"{i}. {respuesta}")
+
+        intento = input("Respuesta: ")
+
+        if intento == correcta:
+            print("¡Braavooo! 🤸🏻")
+            jugador.acierto()
         else:
-            menu()
-            pregunta, datos, correcta = devolverDatos()
-            print(pregunta)
-            for i in range(len(datos)):
-                print(f"{i}. {datos[i]}")
-            intento = input("¿Cuál es la opción correcta?").lower().capitalize()
-            if intento == correcta:
-                print("Braavoooo 🤸🏻")
-                aciertos += 1
-            else:
-                print("No...? 👁️👄👁️")
-                fallos += 1
-            continuar = input("¿Seguir jugando? (S/N)").lower()
-            if continuar == "n":
-                seguir = False
+            print("No...? 👁️👄👁️")
+            jugador.fallo()
+
+        seguir = input("¿Seguir jugando? (s/n): ").lower() == "s"
+
+    print(f"Aciertos: {jugador.aciertos}")
+    print(f"Fallos: {jugador.fallos}")
+
+    guardarJugador(jugador)
 
 
-
-
-
-
-
+if __name__ == "__main__":
+    main()

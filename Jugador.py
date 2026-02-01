@@ -1,24 +1,17 @@
 import uuid
 
 class Jugador:
-    def __init__(self, nombre):
+    def __init__(self, nombre, aciertos=0, fallos=0, id_jugador=None):
         self.nombre = nombre
-        self.id = self.generateId
+        self.id = id_jugador if id_jugador else str(uuid.uuid4())[:4]
+        self.aciertos = aciertos
+        self.fallos = fallos
 
-    @property
-    def generateId(self):
-        idsGuardados = []
-        prov = hex(3)
-        for idGuardador in idsGuardados:
-            if idGuardador.id == self.id:
-                prov = hex(3)
-            idsGuardados.append(prov)
-        return prov
+    def acierto(self):
+        self.aciertos += 1
+
+    def fallo(self):
+        self.fallos += 1
 
     def __str__(self):
-        return f"Nombre: {self.nombre}, id: {self.id}"
-
-    def getNombre(self):
-        return self.nombre
-    def getId(self):
-        return self.id
+        return f"{self.nombre} | {self.id} | {self.aciertos} | {self.fallos}"
